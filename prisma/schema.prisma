@@ -14,7 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum role{
+enum role {
   ORANG_TUA
   PEGAWAI
   DOKTER
@@ -22,32 +22,32 @@ enum role{
 }
 
 model user {
-  id    Int    @id @default(autoincrement())
-  email String @unique
-  name  String
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  name     String
   password String
-  role  role
+  role     role
 
   children child[]
 }
 
 model child {
-  id        Int      @id @default(autoincrement())
-  userId    Int 
-  name      String
-  age       Int
-  dob       DateTime
-  gender    String
-  user      user     @relation(fields: [userId], references: [id])
-  growth    growth_record[]
+  id     Int             @id @default(autoincrement())
+  userId Int
+  name   String
+  age    Int
+  dob    DateTime
+  gender String
+  user   user            @relation(fields: [userId], references: [id])
+  growth growth_record[]
 }
 
 model growth_record {
-  id        Int      @id @default(autoincrement())
-  childId   Int
-  height    Float
-  weight    Float
-  headCirc  Float
-  date      DateTime
-  child     child    @relation(fields: [childId], references: [id])
+  id       Int      @id @default(autoincrement())
+  childId  Int
+  height   Float
+  weight   Float
+  headCirc Float
+  date     DateTime
+  child    child    @relation(fields: [childId], references: [id])
 }
