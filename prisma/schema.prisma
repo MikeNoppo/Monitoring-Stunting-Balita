@@ -29,6 +29,7 @@ model user {
   role     role
 
   children child[]
+  passwordResets password_reset[]
 }
 
 model child {
@@ -51,4 +52,16 @@ model growth_record {
   //headCirc Float
   date     DateTime
   child    child    @relation(fields: [childId], references: [id])
+}
+
+model password_reset {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  tokenDigest String   @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+
+  user user @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

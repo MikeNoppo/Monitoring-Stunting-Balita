@@ -29,6 +29,17 @@ export class AuthController {
     return { message: 'If your email exists, reset instructions sent' };
   }
 
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async reset(
+    @Body('token') token: string,
+    @Body('email') email: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    await this.authService.resetPassword(token, email, newPassword);
+    return { message: 'Password updated' };
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: any) {

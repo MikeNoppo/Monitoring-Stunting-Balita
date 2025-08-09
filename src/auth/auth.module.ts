@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { PrismaModule } from 'nestjs-prisma';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { MailService } from '../mail/mail.service';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { APP_GUARD } from '@nestjs/core';
   providers: [
     AuthService,
     JwtStrategy,
+    MailService,
     { provide: APP_GUARD, useClass: ThrottlerGuard }, // global rate limit guard (login route will use specific named limiter)
   ],
   exports: [AuthService],
