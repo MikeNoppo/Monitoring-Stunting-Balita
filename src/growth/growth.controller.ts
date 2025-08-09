@@ -1,9 +1,10 @@
-import { Controller, Post, Param, ParseIntPipe, Body, ValidationPipe, UseGuards} from '@nestjs/common';
+import { Controller, Post, Param, ParseIntPipe, Body, ValidationPipe, UseGuards, Get} from '@nestjs/common';
 import { GrowthService } from './growth.service';
 import { CreateGrowthRecordDto } from './dto/CreateGrowthRecordDto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/auth/roles/roles.guard';
 import { Roles } from 'src/auth/roles/roles.decorator';
+import { get } from 'http';
 
 @Controller('growth')
 export class GrowthController {
@@ -17,5 +18,11 @@ export class GrowthController {
     @Body(new ValidationPipe()) body: CreateGrowthRecordDto,
   ) {
     return this.growthService.recordGrowth(childId, body);
+  }
+
+  @Get(':childId/growth-records')
+  @UseGuards(AuthGuard('jwt'))
+  async getGrowthRecords(@Param('childId', ParseIntPipe) childId: number) {
+    return this.growthService.getGrowthRecords(childId);
   }
 }
