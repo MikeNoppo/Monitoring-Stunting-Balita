@@ -2,21 +2,22 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 
 const normalize = (url: string) => url.replace(/\/$/, '').trim();
 
-export function buildCorsOriginOption(rawOrigins: string | undefined): CorsOptions['origin'] {
+export function buildCorsOriginOption(
+  rawOrigins: string | undefined,
+): CorsOptions['origin'] {
   const allowList = (rawOrigins || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
     .map(normalize);
 
-  if (!allowList.length) return true; // fallback: reflect origin
+  if (!allowList.length) return true; 
 
   return (
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void,
   ) => {
-    // Disallow requests with no Origin (non-browser requests)
-    if (!origin) return callback(new Error('Not allowed by CORS'));
+    if (!origin) return callback(null, true);
     const o = normalize(origin);
     if (allowList.includes(o)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
