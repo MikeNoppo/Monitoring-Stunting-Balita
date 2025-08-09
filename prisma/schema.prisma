@@ -31,60 +31,69 @@ enum GrowthIndicator {
   WEIGHT_FOR_AGE
 }
 
-model user {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  name     String
-  password String
-  role     role
+enum instansi {
+  RUMAH_SAKIT
+  PUSKESMAS
+  POSYANDU
+}
 
-  children child[]
-  passwordResets password_reset[]
+model user {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  password     String
+  instansi     instansi?
+  namaInstansi String?
+  alamat       String?
+
+  role               role
+  children           child[]
+  passwordResets     password_reset[]
   inputGrowthRecords GrowthRecord[]
 }
 
 model child {
-  id     Int             @id @default(autoincrement())
+  id     Int      @id @default(autoincrement())
   userId Int
   name   String
   dob    DateTime
-  nik    String          @unique
+  nik    String   @unique
 
   gender Gender
-  user   user            @relation(fields: [userId], references: [id])
+  user   user           @relation(fields: [userId], references: [id])
   growth GrowthRecord[]
 }
 
 model WhoStandard {
-  id        Int             @id @default(autoincrement())
-  indicator GrowthIndicator
-  gender    Gender
-  ageInMonths Int             // Usia dalam bulan
-  l         Float
-  m         Float
-  s         Float
+  id          Int             @id @default(autoincrement())
+  indicator   GrowthIndicator
+  gender      Gender
+  ageInMonths Int // Usia dalam bulan
+  l           Float
+  m           Float
+  s           Float
 
   @@unique([indicator, gender, ageInMonths])
 }
 
 model GrowthRecord {
-  id                Int       @id @default(autoincrement())
-  childId           Int
-  height            Float
-  weight            Float
-  inputBy           Int
-  date              DateTime  // Tanggal pengukuran
-  ageInMonthsAtRecord Int       // Usia anak saat data dicatat
-  heightZScore      Float?    // Hasil kalkulasi Z-Score tinggi badan
+  id                  Int      @id @default(autoincrement())
+  childId             Int
+  height              Float
+  weight              Float
+  inputBy             Int
+  date                DateTime // Tanggal pengukuran
+  ageInMonthsAtRecord Int // Usia anak saat data dicatat
+  heightZScore        Float? // Hasil kalkulasi Z-Score tinggi badan
 
-  child child @relation(fields: [childId], references: [id])
-  inputByUser user @relation(fields: [inputBy], references: [id])
+  child       child @relation(fields: [childId], references: [id])
+  inputByUser user  @relation(fields: [inputBy], references: [id])
 }
 
 model password_reset {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   userId      Int
-  tokenDigest String   @unique
+  tokenDigest String    @unique
   expiresAt   DateTime
   usedAt      DateTime?
 
