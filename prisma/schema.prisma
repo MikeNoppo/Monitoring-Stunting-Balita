@@ -48,7 +48,7 @@ model child {
   userId Int
   name   String
   dob    DateTime
-  nik    String
+  nik    String          @unique
 
   gender Gender
   user   user            @relation(fields: [userId], references: [id])
