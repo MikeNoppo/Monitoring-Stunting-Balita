@@ -10,4 +10,9 @@ export class AdminController {
   async register (@Body() regisAdmin : Prisma.userCreateInput) {
       await this.adminService.register(regisAdmin);
   }
+
+  @Post('add-child')
+  async addChild(@Body() childData: Prisma.childCreateInput) {
+    return this.adminService.addChild(childData);
+  }
 }

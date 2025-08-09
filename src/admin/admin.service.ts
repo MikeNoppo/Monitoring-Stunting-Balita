@@ -11,4 +11,14 @@ export class AdminService {
             data: regisAdmin
         })
     }
+
+    async addChild (childData: Prisma.childCreateInput) {
+        const child = await this.prisma.child.create({
+            data: childData
+        });
+        return {
+            message: 'Data anak berhasil ditambahkan.',
+            data: child
+        };
+    }
 }
