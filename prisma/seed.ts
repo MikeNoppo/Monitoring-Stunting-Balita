@@ -1,9 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Gender, GrowthIndicator } from '@prisma/client';
 import * as argon2 from 'argon2';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log('Start seeding...');
+
+  // Seed admin user (idempotent)
   const adminEmail = 'admin@example.com';
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
   if (!existing) {
@@ -16,6 +21,60 @@ async function main() {
   } else {
     console.log('Admin user already exists, skipping');
   }
+
+  // Seed WHO height-for-age standards for boys
+  const boysDataPath = path.join(__dirname, 'data', 'height_for_age_boys.json');
+  const boysDataRaw = fs.readFileSync(boysDataPath, 'utf-8');
+  const boysData: Array<{ ageInMonths: number; l: number; m: number; s: number }> = JSON.parse(boysDataRaw);
+  for (const record of boysData) {
+    await prisma.whoStandard.upsert({
+      where: {
+        indicator_gender_ageInMonths: {
+          indicator: GrowthIndicator.HEIGHT_FOR_AGE,
+          gender: Gender.MALE,
+          ageInMonths: record.ageInMonths,
+        },
+      },
+      update: {},
+      create: {
+        indicator: GrowthIndicator.HEIGHT_FOR_AGE,
+        gender: Gender.MALE,
+        ageInMonths: record.ageInMonths,
+        l: record.l,
+        m: record.m,
+        s: record.s,
+      },
+    });
+  }
+  console.log('Seeding for boys height-for-age completed.');
+
+  // Seed WHO height-for-age standards for girls
+  const girlsDataPath = path.join(__dirname, 'data', 'height_for_age_girls.json');
+  const girlsDataRaw = fs.readFileSync(girlsDataPath, 'utf-8');
+  const girlsData: Array<{ ageInMonths: number; l: number; m: number; s: number }> = JSON.parse(girlsDataRaw);
+  for (const record of girlsData) {
+    await prisma.whoStandard.upsert({
+      where: {
+        indicator_gender_ageInMonths: {
+          indicator: GrowthIndicator.HEIGHT_FOR_AGE,
+          gender: Gender.FEMALE,
+          ageInMonths: record.ageInMonths,
+        },
+      },
+      update: {},
+      create: {
+        indicator: GrowthIndicator.HEIGHT_FOR_AGE,
+        gender: Gender.FEMALE,
+        ageInMonths: record.ageInMonths,
+        l: record.l,
+        m: record.m,
+        s: record.s,
+      },
+    });
+  }
+  console.log('Seeding for girls height-for-age completed.');
+
+  console.log('Seeding finished.');
 }
 
 main()
