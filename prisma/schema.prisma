@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  //output   = "../generated/prisma"
 }
 
 datasource db {
@@ -47,7 +47,8 @@ model growth_record {
   childId  Int
   height   Float
   weight   Float
-  headCirc Float
+  inputBy  String
+  //headCirc Float
   date     DateTime
   child    child    @relation(fields: [childId], references: [id])
 }
