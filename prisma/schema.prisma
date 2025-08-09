@@ -21,6 +21,16 @@ enum role {
   ADMIN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum GrowthIndicator {
+  HEIGHT_FOR_AGE
+  WEIGHT_FOR_AGE
+}
+
 model user {
   id       Int    @id @default(autoincrement())
   email    String @unique
@@ -30,28 +40,43 @@ model user {
 
   children child[]
   passwordResets password_reset[]
+  inputGrowthRecords GrowthRecord[]
 }
 
 model child {
   id     Int             @id @default(autoincrement())
   userId Int
   name   String
-  age    Int
   dob    DateTime
-  gender String
+  gender Gender
   user   user            @relation(fields: [userId], references: [id])
-  growth growth_record[]
+  growth GrowthRecord[]
 }
 
-model growth_record {
-  id       Int      @id @default(autoincrement())
-  childId  Int
-  height   Float
-  weight   Float
-  inputBy  String
-  //headCirc Float
-  date     DateTime
-  child    child    @relation(fields: [childId], references: [id])
+model WhoStandard {
+  id        Int             @id @default(autoincrement())
+  indicator GrowthIndicator
+  gender    Gender
+  ageInMonths Int             // Usia dalam bulan
+  l         Float
+  m         Float
+  s         Float
+
+  @@unique([indicator, gender, ageInMonths])
+}
+
+model GrowthRecord {
+  id                Int       @id @default(autoincrement())
+  childId           Int
+  height            Float
+  weight            Float
+  inputBy           Int
+  date              DateTime  // Tanggal pengukuran
+  ageInMonthsAtRecord Int       // Usia anak saat data dicatat
+  heightZScore      Float?    // Hasil kalkulasi Z-Score tinggi badan
+
+  child child @relation(fields: [childId], references: [id])
+  inputByUser user @relation(fields: [inputBy], references: [id])
 }
 
 model password_reset {
