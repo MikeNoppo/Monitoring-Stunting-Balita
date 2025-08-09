@@ -7,7 +7,6 @@ import { calculateAgeInMonths, calculateZScore } from '../lib/growth-utils';
 export class GrowthService {
   constructor(private readonly prisma: PrismaService) {}
 
-
   async recordGrowth(
     childId: number,
     data: {
@@ -66,6 +65,19 @@ export class GrowthService {
       },
     });
 
-    return newRecord;
+    return {
+      message: 'Data pertumbuhan berhasil direkam.',
+      data: newRecord,
+    };
+  }
+
+  async getGrowthRecords(childId: number) {
+    const records = await this.prisma.growthRecord.findMany({
+      where: { childId: childId },
+    });
+    return {
+      message: 'Data rekaman pertumbuhan berhasil diambil.',
+      data: records,
+    };
   }
 }
