@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -24,12 +28,21 @@ export class AuthService {
     try {
       const hash = await argon2.hash(dto.password);
       const user = await this.prisma.user.create({
-        data: { email: dto.email, name: dto.name, password: hash, role: 'ORANG_TUA' },
+        data: {
+          email: dto.email,
+          name: dto.name,
+          password: hash,
+          role: 'ORANG_TUA',
+        },
         select: { id: true, email: true, name: true, role: true },
       });
-      return user;
+      return {
+        message: 'User registered successfully',
+        data: user,
+      };
     } catch (e: any) {
-      if (e.code === 'P2002') throw new ConflictException('Email already exists');
+      if (e.code === 'P2002')
+        throw new ConflictException('Email already exists');
       throw e;
     }
   }
@@ -40,7 +53,16 @@ export class AuthService {
     const valid = await argon2.verify(user.password, dto.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     const token = this.signToken(user);
-    return { ...token, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+    return {
+      message: 'Login successful',
+      ...token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    };
   }
 
   async forgotPassword(email: string) {
@@ -53,4 +75,3 @@ export class AuthService {
     return true;
   }
 }
-
