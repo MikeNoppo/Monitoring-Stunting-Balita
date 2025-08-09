@@ -3,7 +3,7 @@ import {
   IsNotEmpty,
   IsNumber,
   Min,
-} from 'class-validator/types/decorator/decorators';
+} from 'class-validator';
 
 export class CreateGrowthRecordDto {
   @IsNumber()
