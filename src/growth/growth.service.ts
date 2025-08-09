@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { GrowthIndicator } from '@prisma/client';
 import { calculateAgeInMonths, calculateZScore } from '../lib/growth-utils';
@@ -13,7 +13,7 @@ export class GrowthService {
       height: number;
       weight: number;
       date: Date | string;
-      inputBy: number;
+      inputBy: number; // derived from authenticated user
     },
   ) {
     // 1. Ambil data anak untuk mendapatkan tanggal lahir dan jenis kelamin
@@ -22,7 +22,7 @@ export class GrowthService {
     });
 
     // 2. Hitung usia anak dalam bulan saat pengukuran
-    const measurementDate = new Date(data.date);
+  const measurementDate = new Date(data.date);
   const ageInMonths = calculateAgeInMonths(child.dob, measurementDate);
 
     if (ageInMonths < 0) {
@@ -45,7 +45,12 @@ export class GrowthService {
     let heightZScore: number | null = null;
     if (standard) {
       // 4. Jika standar ditemukan, hitung Z-score
-  heightZScore = calculateZScore(standard.l, standard.m, standard.s, data.height);
+      heightZScore = calculateZScore(
+        standard.l,
+        standard.m,
+        standard.s,
+        data.height,
+      );
     } else {
       console.warn(
         `PERINGATAN: Standar WHO untuk [${child.gender}, ${ageInMonths} bulan] tidak ditemukan. Z-score tidak dihitung.`,
@@ -71,7 +76,19 @@ export class GrowthService {
     };
   }
 
-  async getGrowthRecords(childId: number) {
+  async getGrowthRecords(childId: number, user: { id: number; role: string }) {
+    // Allow staff and admins
+    if (!['ADMIN', 'PEGAWAI', 'DOKTER'].includes(user.role)) {
+      // For parents, verify the child belongs to them
+      const child = await this.prisma.child.findUnique({
+        where: { id: childId },
+        select: { userId: true },
+      });
+      if (!child || child.userId !== user.id) {
+        throw new ForbiddenException('Forbidden');
+      }
+    }
+
     const records = await this.prisma.growthRecord.findMany({
       where: { childId: childId },
     });

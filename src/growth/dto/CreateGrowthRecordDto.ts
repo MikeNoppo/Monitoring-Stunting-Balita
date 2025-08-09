@@ -19,8 +19,4 @@ export class CreateGrowthRecordDto {
   @IsDateString()
   @IsNotEmpty()
   date: Date;
-
-  @IsNumber()
-  @IsNotEmpty()
-  inputBy: number;
 }
