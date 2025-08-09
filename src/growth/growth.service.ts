@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import { GrowthIndicator } from '@prisma/client';
-import { calculateAgeInMonths, calculateZScore } from '../lib/growth-utils';
+import { Gender, GrowthIndicator } from '@prisma/client';
+import { calculateAgeInMonths, calculateZScore, valueFromZ } from '../lib/growth-utils';
 
 @Injectable()
 export class GrowthService {
@@ -95,6 +95,68 @@ export class GrowthService {
     return {
       message: 'Data rekaman pertumbuhan berhasil diambil.',
       data: records,
+    };
+  }
+
+  private async ensureReadAccess(childId: number, user: { id: number; role: string }) {
+    if (['ADMIN', 'PEGAWAI', 'DOKTER'].includes(user.role)) return;
+    const child = await this.prisma.child.findUnique({
+      where: { id: childId },
+      select: { userId: true },
+    });
+    if (!child || child.userId !== user.id) {
+      throw new ForbiddenException('Forbidden');
+    }
+  }
+
+  async getGrowthChartData(childId: number, user: { id: number; role: string }) {
+    await this.ensureReadAccess(childId, user);
+
+    const child = await this.prisma.child.findUniqueOrThrow({
+      where: { id: childId },
+      select: { dob: true, gender: true },
+    });
+
+    const records = await this.prisma.growthRecord.findMany({
+      where: { childId },
+      orderBy: { date: 'asc' },
+      select: { date: true, height: true, weight: true, ageInMonthsAtRecord: true, heightZScore: true },
+    });
+
+    // WHO curves for HEIGHT_FOR_AGE at z = -3,-2,-1,0,1,2,3
+    const standards = await this.prisma.whoStandard.findMany({
+      where: { indicator: GrowthIndicator.HEIGHT_FOR_AGE, gender: child.gender as Gender },
+      orderBy: { ageInMonths: 'asc' },
+      select: { ageInMonths: true, l: true, m: true, s: true },
+    });
+
+    const zLevels = [-3, -2, -1, 0, 1, 2, 3];
+    const whoCurves = zLevels.map((z) => ({
+      z,
+      points: standards.map((st) => ({ ageInMonths: st.ageInMonths, value: valueFromZ(st.l, st.m, st.s, z) })),
+    }));
+
+    return {
+      message: 'Chart data generated',
+      data: {
+        records,
+        whoCurves,
+      },
+    };
+  }
+
+  async getGrowthStats(childId: number, user: { id: number; role: string }) {
+    await this.ensureReadAccess(childId, user);
+    const agg = await this.prisma.growthRecord.aggregate({
+      where: { childId },
+      _count: { _all: true },
+      _avg: { height: true, weight: true, heightZScore: true },
+      _min: { date: true, height: true, weight: true, heightZScore: true },
+      _max: { date: true, height: true, weight: true, heightZScore: true },
+    });
+    return {
+      message: 'Stats calculated',
+      data: agg,
     };
   }
 }

@@ -36,3 +36,16 @@ export function calculateZScore(
   const zScore = (Math.pow(value / m, l) - 1) / (l * s);
   return parseFloat(zScore.toFixed(2)); // Dibulatkan 2 angka desimal
 }
+
+/**
+ * Hitung nilai (mis. tinggi/berat) dari parameter LMS dan z-score tertentu.
+ * Rumus invers LMS:
+ *  - Jika L = 0: value = M * exp(S * Z)
+ *  - Selain itu: value = M * (1 + L*S*Z)^(1/L)
+ */
+export function valueFromZ(l: number, m: number, s: number, z: number): number {
+  if (l === 0) {
+    return m * Math.exp(s * z);
+  }
+  return m * Math.pow(1 + l * s * z, 1 / l);
+}

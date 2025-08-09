@@ -29,4 +29,22 @@ export class GrowthController {
   ) {
     return this.growthService.getGrowthRecords(childId, user);
   }
+
+  @Get(':childId/growth-chart')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async getGrowthChart(
+    @Param('childId', ParseIntPipe) childId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.growthService.getGrowthChartData(childId, user);
+  }
+
+  @Get(':childId/growth-stats')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async getGrowthStats(
+    @Param('childId', ParseIntPipe) childId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.growthService.getGrowthStats(childId, user);
+  }
 }
