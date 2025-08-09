@@ -48,6 +48,8 @@ model child {
   userId Int
   name   String
   dob    DateTime
+  nik    String
+
   gender Gender
   user   user            @relation(fields: [userId], references: [id])
   growth GrowthRecord[]
