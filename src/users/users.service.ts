@@ -8,7 +8,9 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.user.findMany({ select: { id: true, email: true, name: true, role: true } });
+    return this.prisma.user.findMany({
+      select: { id: true, email: true, name: true, role: true },
+    });
   }
 
   async findById(id: number) {
@@ -19,7 +21,11 @@ export class UsersService {
 
   async updateRole(id: number, newRole: Role) {
     await this.findById(id);
-    return this.prisma.user.update({ where: { id }, data: { role: newRole }, select: { id: true, email: true, name: true, role: true } });
+    return this.prisma.user.update({
+      where: { id },
+      data: { role: newRole },
+      select: { id: true, email: true, name: true, role: true },
+    });
   }
 
   async findByEmail(email: string) {

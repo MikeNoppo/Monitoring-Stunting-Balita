@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import { BadRequestException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -72,12 +73,16 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (user) {
       // Invalidate existing tokens for this user (optional hardening)
-      await this.prisma.password_reset.deleteMany({ where: { userId: user.id } }).catch(() => undefined);
+      await this.prisma.password_reset
+        .deleteMany({ where: { userId: user.id } })
+        .catch(() => undefined);
 
       // Create single-use token by storing digest only
       const rawToken = cryptoRandomToken();
       const digest = await argon2.hash(rawToken);
-      const expiresAt = new Date(Date.now() + (Number(process.env.RESET_TOKEN_TTL_MS) || 1000 * 60 * 15)); // 15m default
+      const expiresAt = new Date(
+        Date.now() + (Number(process.env.RESET_TOKEN_TTL_MS) || 1000 * 60 * 15),
+      ); // 15m default
 
       await this.prisma.password_reset.create({
         data: { userId: user.id, tokenDigest: digest, expiresAt },
@@ -112,9 +117,17 @@ export class AuthService {
     // Rotate password and mark token used (single-use)
     const hash = await argon2.hash(newPassword);
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: user.id }, data: { password: hash } }),
-      this.prisma.password_reset.update({ where: { id: pr.id }, data: { usedAt: new Date() } }),
-      this.prisma.password_reset.deleteMany({ where: { userId: user.id, id: { not: pr.id } } }), // cleanup others
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hash },
+      }),
+      this.prisma.password_reset.update({
+        where: { id: pr.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.password_reset.deleteMany({
+        where: { userId: user.id, id: { not: pr.id } },
+      }), // cleanup others
     ]);
 
     return { message: 'Password updated' };
@@ -123,6 +136,6 @@ export class AuthService {
 
 function cryptoRandomToken(length = 48) {
   // URL-safe base64 token
-  const bytes = require('crypto').randomBytes(length);
+  const bytes = randomBytes(length);
   return bytes.toString('base64url');
 }
