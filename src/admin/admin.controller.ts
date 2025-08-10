@@ -21,8 +21,9 @@ export class AdminController {
     return this.adminService.addChild(childData);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN','PEGAWAI','DOKTER')
   @Get('parents')
-  @Roles('ADMIN')
   async listParents(
     @Query('q') q?: string,
     @Query('limit') limit?: string,
