@@ -6,16 +6,15 @@ import { RolesGuard } from 'src/auth/roles/roles.guard';
 import { Roles } from 'src/auth/roles/roles.decorator';
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Post('register')
-  @Roles('ADMIN')
   async register(@Body() regisAdmin: Prisma.userCreateInput) {
     return this.adminService.register(regisAdmin);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('add-child')
   @Roles('ADMIN')
   async addChild(@Body() childData: Prisma.childCreateInput) {
