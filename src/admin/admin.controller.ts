@@ -33,7 +33,7 @@ export class AdminController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN','DOKTER','PEGAWAI')
   @Get('children')
   async listChildren(
     @Query('q') q?: string,
