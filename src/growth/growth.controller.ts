@@ -5,12 +5,13 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/auth/roles/roles.guard';
 import { Roles } from 'src/auth/roles/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('growth')
 export class GrowthController {
   constructor(private readonly growthService: GrowthService) {}
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PEGAWAI', 'DOKTER', 'ADMIN')
   @Post(':childId/growth-records')
   async addGrowthRecord(
@@ -22,7 +23,7 @@ export class GrowthController {
   }
 
   @Get(':childId/growth-records')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async getGrowthRecords(
     @Param('childId', ParseIntPipe) childId: number,
     @CurrentUser() user: any,
@@ -31,7 +32,7 @@ export class GrowthController {
   }
 
   @Get(':childId/growth-chart')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async getGrowthChart(
     @Param('childId', ParseIntPipe) childId: number,
     @CurrentUser() user: any,
@@ -40,7 +41,7 @@ export class GrowthController {
   }
 
   @Get(':childId/growth-stats')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async getGrowthStats(
     @Param('childId', ParseIntPipe) childId: number,
     @CurrentUser() user: any,
