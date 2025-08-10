@@ -31,4 +31,18 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
+
+  async getChildrenByParentId(parentId: number) {
+    return this.prisma.child.findMany({
+      where: { userId: parentId },
+      select: {
+        id: true,
+        name: true,
+        dob: true,
+        nik: true,
+        gender: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+  }
 }

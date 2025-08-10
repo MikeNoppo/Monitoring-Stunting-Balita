@@ -35,4 +35,9 @@ export class UsersController {
     if (user.id === id) throw new ForbiddenException('Cannot change own role');
     return this.usersService.updateRole(id, role);
   }
+  @Get('children')
+  @Roles('ORANG_TUA')
+  async getChildren(@CurrentUser() user: any) {
+    return this.usersService.getChildrenByParentId(user.id);
+  }
 }
