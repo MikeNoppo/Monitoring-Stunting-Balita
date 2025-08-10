@@ -16,7 +16,7 @@ export class AdminController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('add-child')
-  @Roles('ADMIN')
+  @Roles('ADMIN','DOKTER','PEGAWAI')
   async addChild(@Body() childData: Prisma.childCreateInput) {
     return this.adminService.addChild(childData);
   }
