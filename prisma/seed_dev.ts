@@ -92,6 +92,86 @@ async function main() {
     }
   }
 
+  // Extra parent with 2 children who frequently check at hospital (doctor input)
+  const hospitalParent = {
+    email: 'parent_hospital@example.com',
+    name: 'Ortu Rajin RS',
+    password: 'Parent123!',
+    children: [
+      { name: 'Sehat', gender: Gender.MALE, dob: new Date('2023-05-10'), nik: 'NIK-RS-SEHAT-101' },
+      { name: 'Kurang Gizi', gender: Gender.FEMALE, dob: new Date('2023-05-10'), nik: 'NIK-RS-KGIZI-102' },
+    ],
+  } as const;
+
+  {
+    const user = await ensureUser({ email: hospitalParent.email, name: hospitalParent.name, password: hospitalParent.password, role: 'ORANG_TUA' });
+    createdParents.push({ email: hospitalParent.email, password: hospitalParent.password, id: user.id });
+    for (const c of hospitalParent.children) {
+      await prisma.child.upsert({
+        where: { nik: c.nik },
+        update: { name: c.name, dob: c.dob, gender: c.gender, userId: user.id },
+        create: { name: c.name, dob: c.dob, gender: c.gender, nik: c.nik, user: { connect: { id: user.id } } },
+      });
+    }
+    // Fetch the two children records
+    const children = await prisma.child.findMany({ where: { userId: user.id } });
+    const childHealthy = children.find((ch) => ch.nik === hospitalParent.children[0].nik)!;
+    const childUnhealthy = children.find((ch) => ch.nik === hospitalParent.children[1].nik)!;
+
+    // Monthly records 0..24 months, entered by doctor (hospital)
+    for (let age = 0; age <= 24; age++) {
+      for (const ch of [childHealthy, childUnhealthy]) {
+        const date = addMonths(new Date(ch.dob), age);
+        const hfa = await prisma.whoStandard.findUnique({
+          where: {
+            indicator_gender_ageInMonths: {
+              indicator: GrowthIndicator.HEIGHT_FOR_AGE,
+              gender: ch.gender,
+              ageInMonths: age,
+            },
+          },
+        });
+        const wfa = await prisma.whoStandard.findUnique({
+          where: {
+            indicator_gender_ageInMonths: {
+              indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+              gender: ch.gender,
+              ageInMonths: age,
+            },
+          },
+        });
+        if (!hfa || !wfa) continue;
+
+        // Healthy child around z=0; unhealthy child around z=-2.5 (height) and z=-2 (weight)
+        const isHealthy = ch.id === childHealthy.id;
+        const zH = isHealthy ? 0 : -2.5;
+        const zW = isHealthy ? 0 : -2.0;
+
+        const heightVal = parseFloat(valueFromZ(hfa.l, hfa.m, hfa.s, zH).toFixed(1));
+        const weightVal = parseFloat(valueFromZ(wfa.l, wfa.m, wfa.s, zW).toFixed(2));
+        const heightZ = calculateZScore(hfa.l, hfa.m, hfa.s, heightVal);
+        const weightZ = calculateZScore(wfa.l, wfa.m, wfa.s, weightVal);
+
+        const ageInMonths = calculateAgeInMonths(new Date(ch.dob), date);
+        const exists = await prisma.growthRecord.findFirst({ where: { childId: ch.id, date } });
+        if (exists) continue;
+
+        await prisma.growthRecord.create({
+          data: {
+            childId: ch.id,
+            height: heightVal,
+            weight: weightVal,
+            date,
+            inputBy: doctor.id,
+            ageInMonthsAtRecord: ageInMonths,
+            heightZScore: heightZ,
+            weightZScore: weightZ,
+          },
+        });
+      }
+    }
+  }
+
   // Create growth records for each child at selected ages using WHO standards
   const allChildren = await prisma.child.findMany({});
   const inputById = staff.id; // records entered by staff
