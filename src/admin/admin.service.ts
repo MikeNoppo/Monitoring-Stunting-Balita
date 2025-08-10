@@ -36,4 +36,25 @@ export class AdminService {
             data: child
         };
     }
+
+    async listParents(opts: { q?: string; take: number }) {
+        const where: Prisma.userWhereInput = {
+            role: 'ORANG_TUA',
+            ...(opts.q
+                ? {
+                      OR: [
+                          { name: { contains: opts.q, mode: 'insensitive' } },
+                          { email: { contains: opts.q, mode: 'insensitive' } },
+                      ],
+                  }
+                : {}),
+        };
+        const data = await this.prisma.user.findMany({
+            where,
+            take: opts.take,
+            orderBy: { name: 'asc' },
+            select: { id: true, name: true, email: true },
+        });
+        return { message: 'Parents fetched', data };
+    }
 }

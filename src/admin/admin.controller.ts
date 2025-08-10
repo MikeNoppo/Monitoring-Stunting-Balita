@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -19,5 +19,15 @@ export class AdminController {
   @Roles('ADMIN')
   async addChild(@Body() childData: Prisma.childCreateInput) {
     return this.adminService.addChild(childData);
+  }
+
+  @Get('parents')
+  @Roles('ADMIN')
+  async listParents(
+    @Query('q') q?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    return this.adminService.listParents({ q: q?.trim() || undefined, take });
   }
 }
