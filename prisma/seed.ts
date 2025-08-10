@@ -74,6 +74,66 @@ async function main() {
   }
   console.log('Seeding for girls height-for-age completed.');
 
+  // Seed WHO weight-for-age standards for boys
+  try {
+    const wfaBoysPath = path.join(__dirname, 'data', 'weight_for_age_boys.json');
+    const wfaBoysRaw = fs.readFileSync(wfaBoysPath, 'utf-8');
+    const wfaBoys: Array<{ ageInMonths: number; l: number; m: number; s: number }> = JSON.parse(wfaBoysRaw);
+    for (const record of wfaBoys) {
+      await prisma.whoStandard.upsert({
+        where: {
+          indicator_gender_ageInMonths: {
+            indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+            gender: Gender.MALE,
+            ageInMonths: record.ageInMonths,
+          },
+        },
+        update: {},
+        create: {
+          indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+          gender: Gender.MALE,
+          ageInMonths: record.ageInMonths,
+          l: record.l,
+          m: record.m,
+          s: record.s,
+        },
+      });
+    }
+    console.log('Seeding for boys weight-for-age completed.');
+  } catch (e) {
+    console.warn('Skipping weight-for-age (boys) seeding:', (e as Error).message);
+  }
+
+  // Seed WHO weight-for-age standards for girls
+  try {
+    const wfaGirlsPath = path.join(__dirname, 'data', 'weight_for_age_girls.json');
+    const wfaGirlsRaw = fs.readFileSync(wfaGirlsPath, 'utf-8');
+    const wfaGirls: Array<{ ageInMonths: number; l: number; m: number; s: number }> = JSON.parse(wfaGirlsRaw);
+    for (const record of wfaGirls) {
+      await prisma.whoStandard.upsert({
+        where: {
+          indicator_gender_ageInMonths: {
+            indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+            gender: Gender.FEMALE,
+            ageInMonths: record.ageInMonths,
+          },
+        },
+        update: {},
+        create: {
+          indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+          gender: Gender.FEMALE,
+          ageInMonths: record.ageInMonths,
+          l: record.l,
+          m: record.m,
+          s: record.s,
+        },
+      });
+    }
+    console.log('Seeding for girls weight-for-age completed.');
+  } catch (e) {
+    console.warn('Skipping weight-for-age (girls) seeding:', (e as Error).message);
+  }
+
   console.log('Seeding finished.');
 }
 

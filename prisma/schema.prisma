@@ -85,6 +85,7 @@ model GrowthRecord {
   date                DateTime // Tanggal pengukuran
   ageInMonthsAtRecord Int // Usia anak saat data dicatat
   heightZScore        Float? // Hasil kalkulasi Z-Score tinggi badan
+  weightZScore        Float? // Hasil kalkulasi Z-Score berat badan
 
   child       child @relation(fields: [childId], references: [id])
   inputByUser user  @relation(fields: [inputBy], references: [id])

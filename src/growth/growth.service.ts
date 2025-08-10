@@ -31,8 +31,8 @@ export class GrowthService {
       );
     }
 
-    // 3. Cari standar LMS yang sesuai di database
-    const standard = await this.prisma.whoStandard.findUnique({
+  // 3. Cari standar LMS untuk tinggi (HFA) pada usia tsb
+  const standard = await this.prisma.whoStandard.findUnique({
       where: {
         indicator_gender_ageInMonths: {
           indicator: GrowthIndicator.HEIGHT_FOR_AGE,
@@ -57,6 +57,26 @@ export class GrowthService {
       );
     }
 
+    // 4b. Cari standar LMS untuk berat (WFA) pada usia tsb
+    const wfaStandard = await this.prisma.whoStandard.findUnique({
+      where: {
+        indicator_gender_ageInMonths: {
+          indicator: GrowthIndicator.WEIGHT_FOR_AGE,
+          gender: child.gender,
+          ageInMonths: ageInMonths,
+        },
+      },
+    });
+
+    let weightZScore: number | null = null;
+    if (wfaStandard) {
+      weightZScore = calculateZScore(wfaStandard.l, wfaStandard.m, wfaStandard.s, data.weight);
+    } else {
+      console.warn(
+        `PERINGATAN: Standar WHO WFA untuk [${child.gender}, ${ageInMonths} bulan] tidak ditemukan. Z-score berat tidak dihitung.`,
+      );
+    }
+
     // 5. Simpan data mentah DAN hasil perhitungan ke tabel GrowthRecord
     const newRecord = await this.prisma.growthRecord.create({
       data: {
@@ -67,6 +87,7 @@ export class GrowthService {
         inputBy: data.inputBy,
         ageInMonthsAtRecord: ageInMonths,
         heightZScore: heightZScore,
+        weightZScore: weightZScore,
       },
     });
 
@@ -120,11 +141,11 @@ export class GrowthService {
     const records = await this.prisma.growthRecord.findMany({
       where: { childId },
       orderBy: { date: 'asc' },
-      select: { date: true, height: true, weight: true, ageInMonthsAtRecord: true, heightZScore: true },
+      select: { date: true, height: true, weight: true, ageInMonthsAtRecord: true, heightZScore: true, weightZScore: true },
     });
 
-    // WHO curves for HEIGHT_FOR_AGE at z = -3,-2,-1,0,1,2,3
-    const standards = await this.prisma.whoStandard.findMany({
+  // WHO curves for HEIGHT_FOR_AGE at z = -3,-2,-1,0,1,2,3
+  const standards = await this.prisma.whoStandard.findMany({
       where: { indicator: GrowthIndicator.HEIGHT_FOR_AGE, gender: child.gender as Gender },
       orderBy: { ageInMonths: 'asc' },
       select: { ageInMonths: true, l: true, m: true, s: true },
@@ -136,11 +157,58 @@ export class GrowthService {
       points: standards.map((st) => ({ ageInMonths: st.ageInMonths, value: valueFromZ(st.l, st.m, st.s, z) })),
     }));
 
+    // Also prepare WHO curves for WEIGHT_FOR_AGE
+    const wfaStandards = await this.prisma.whoStandard.findMany({
+      where: { indicator: GrowthIndicator.WEIGHT_FOR_AGE, gender: child.gender as Gender },
+      orderBy: { ageInMonths: 'asc' },
+      select: { ageInMonths: true, l: true, m: true, s: true },
+    });
+    const wfaCurves = zLevels.map((z) => ({
+      z,
+      points: wfaStandards.map((st) => ({ ageInMonths: st.ageInMonths, value: valueFromZ(st.l, st.m, st.s, z) })),
+    }));
+
     return {
       message: 'Chart data generated',
       data: {
         records,
-        whoCurves,
+        whoCurves, // height-for-age curves
+        wfaCurves, // weight-for-age curves
+      },
+    };
+  }
+
+  async getWeightChartData(childId: number, user: { id: number; role: string }) {
+    await this.ensureReadAccess(childId, user);
+
+    const child = await this.prisma.child.findUniqueOrThrow({
+      where: { id: childId },
+      select: { dob: true, gender: true },
+    });
+
+    const records = await this.prisma.growthRecord.findMany({
+      where: { childId },
+      orderBy: { date: 'asc' },
+      select: { date: true, weight: true, ageInMonthsAtRecord: true },
+    });
+
+    const wfaStandards = await this.prisma.whoStandard.findMany({
+      where: { indicator: GrowthIndicator.WEIGHT_FOR_AGE, gender: child.gender as Gender },
+      orderBy: { ageInMonths: 'asc' },
+      select: { ageInMonths: true, l: true, m: true, s: true },
+    });
+
+    const zLevels = [-3, -2, -1, 0, 1, 2, 3];
+    const wfaCurves = zLevels.map((z) => ({
+      z,
+      points: wfaStandards.map((st) => ({ ageInMonths: st.ageInMonths, value: valueFromZ(st.l, st.m, st.s, z) })),
+    }));
+
+    return {
+      message: 'Weight chart data generated',
+      data: {
+        records,
+        wfaCurves,
       },
     };
   }
@@ -150,9 +218,9 @@ export class GrowthService {
     const agg = await this.prisma.growthRecord.aggregate({
       where: { childId },
       _count: { _all: true },
-      _avg: { height: true, weight: true, heightZScore: true },
-      _min: { date: true, height: true, weight: true, heightZScore: true },
-      _max: { date: true, height: true, weight: true, heightZScore: true },
+  _avg: { height: true, weight: true, heightZScore: true, weightZScore: true },
+  _min: { date: true, height: true, weight: true, heightZScore: true, weightZScore: true },
+  _max: { date: true, height: true, weight: true, heightZScore: true, weightZScore: true },
     });
     return {
       message: 'Stats calculated',

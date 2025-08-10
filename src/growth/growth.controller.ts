@@ -40,6 +40,15 @@ export class GrowthController {
     return this.growthService.getGrowthChartData(childId, user);
   }
 
+  @Get(':childId/weight-chart')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getWeightChart(
+    @Param('childId', ParseIntPipe) childId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.growthService.getWeightChartData(childId, user);
+  }
+
   @Get(':childId/growth-stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getGrowthStats(
