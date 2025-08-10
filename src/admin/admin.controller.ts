@@ -31,4 +31,18 @@ export class AdminController {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
     return this.adminService.listParents({ q: q?.trim() || undefined, take });
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('children')
+  async listChildren(
+    @Query('q') q?: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const pageNum = Math.max(Number(page) || 1, 1);
+    const skip = (pageNum - 1) * take;
+    return this.adminService.listChildren({ q: q?.trim() || undefined, take, skip });
+  }
 }

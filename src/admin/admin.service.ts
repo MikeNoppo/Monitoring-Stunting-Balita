@@ -57,4 +57,43 @@ export class AdminService {
         });
         return { message: 'Parents fetched', data };
     }
+
+    async listChildren(opts: { q?: string; take: number; skip?: number }) {
+        const where: Prisma.childWhereInput = opts.q
+            ? {
+                  OR: [
+                      { name: { contains: opts.q, mode: 'insensitive' } },
+                      { nik: { contains: opts.q, mode: 'insensitive' } },
+                  ],
+              }
+            : {};
+
+        const [data, total] = await this.prisma.$transaction([
+            this.prisma.child.findMany({
+                where,
+                take: opts.take,
+                skip: opts.skip || 0,
+                orderBy: { id: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    dob: true,
+                    nik: true,
+                    gender: true,
+                    user: { select: { id: true, name: true, email: true } },
+                },
+            }),
+            this.prisma.child.count({ where }),
+        ]);
+
+        return {
+            message: 'Children fetched',
+            data,
+            pagination: {
+                total,
+                take: opts.take,
+                skip: opts.skip || 0,
+            },
+        };
+    }
 }
